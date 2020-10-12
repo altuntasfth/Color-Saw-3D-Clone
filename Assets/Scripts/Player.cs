@@ -25,7 +25,6 @@ public class Player : MonoBehaviour
 	
 	private Vector2 touchStartPosition, touchEndPosition;
 	private Touch theTouch;
-	private Vector3 directionTouch;
 
 	private void Awake()
 	{
@@ -65,39 +64,43 @@ public class Player : MonoBehaviour
 		TouchMove();
 	}
 	
+	//Dokunmatik ile hareket
 	private void TouchMove()
 	{
+		//Rigibody.position, Transform.position ile konum güncellemekten daha hızlıdır.
 		playerPos = rb.position;
 		
-		if (Input.touchCount > 0)
+		if (Input.touchCount > 0)		//Eğer ekrana bir veya daha fazla parmak ile dokunulduysa
 		{
-			theTouch = Input.GetTouch(0);
-			touchEndPosition = theTouch.position;
+			theTouch = Input.GetTouch(0);			//theTouch = ilk dokunulan parmak
+			touchEndPosition = theTouch.position;		//touchEndPosition = parmağın ekrandaki güncel konumu
 
-			if (theTouch.phase == TouchPhase.Began)
+			if (theTouch.phase == TouchPhase.Began)		//ekrana ilk dokunulduğu durumda
 			{
 				ResetMovement();
 			}
 			else if (theTouch.phase == TouchPhase.Moved || theTouch.phase == TouchPhase.Ended)
 			{
 				var touchDir = touchEndPosition - touchStartPosition;
-				if (directionTouch == Vector3.zero)
+				if (direction == Vector3.zero)
 				{
-					if ( touchDir.magnitude < turnSensitivity)
+					if (touchDir.magnitude < turnSensitivity)	//parmak hareketinin büyüklüğü 10f den küçükse
+					{
 						return;
+					}
 					direction = touchDir.normalized;
+					//parmak, yatayda veya dikeyde hareket ettiğindeki direction yönü
 					direction = Mathf.Abs(direction.x) > Mathf.Abs(direction.y) ? new Vector3(1, 0, 0) : new Vector3(0, 0, 1);
 				}
 
-				var touchDistance = touchEndPosition - touchStartPosition;
-				if (direction.x != 0 && touchEndPosition.x != touchStartPosition.x)
+				if (direction.x != 0 && touchEndPosition.x != touchStartPosition.x)			//parmak yatayda hareket ediyorsa
 				{
-					var distance = new Vector3(Mathf.RoundToInt(touchDistance.x * sensitivity), 0, touchDistance.y);
+					var distance = new Vector3(Mathf.RoundToInt(touchDir.x * sensitivity), 0, touchDir.y);
 					targetPos = playerStartPos + direction * distance.x;
 				}
-				else if (direction.z != 0 && touchEndPosition.y != touchStartPosition.y)
+				else if (direction.z != 0 && touchEndPosition.y != touchStartPosition.y)	//parmak dikeyde hareket ediyorsa
 				{
-					var distance = new Vector3(touchDistance.x, 0, Mathf.RoundToInt(touchDistance.y * sensitivity));
+					var distance = new Vector3(touchDir.x, 0, Mathf.RoundToInt(touchDir.y * sensitivity));
 					targetPos = playerStartPos + direction * distance.z;
 				}
 				else
@@ -105,7 +108,7 @@ public class Player : MonoBehaviour
 					targetPos = playerStartPos;
 				}
 			}
-			
+			//x yönünde hareket varken y yönüne yönelme olursa 
 			if ((targetPos - playerPos).magnitude < stopTreshold)
 			{
 				if (!movementReset)
@@ -120,6 +123,7 @@ public class Player : MonoBehaviour
 		}
 	}
 
+	//Mouse ile hareket
 	private void MouseMove()
 	{
 		playerPos = rb.position;
@@ -174,6 +178,7 @@ public class Player : MonoBehaviour
 
 	private void FixedUpdate()
 	{
+		//hareket halindeyken
 		if (playerPos != targetPos)
 		{
 			targetPos = new Vector3(Mathf.Clamp(targetPos.x, -12f, 12f), 0, Mathf.Clamp(targetPos.z, -25f, 25f));
@@ -181,28 +186,29 @@ public class Player : MonoBehaviour
 		}
 	}
 
+	//İlk konum ve yön bilgilerinin ataması
 	private void ResetMovement()
 	{
 		movementReset = true;
 		
-		direction = Vector3.zero;
+		direction = Vector3.zero;		//konum ve yön sıfıra eşitlendi
 		mouseStartPos = Input.mousePosition;
 		
-		directionTouch = Vector2.zero;
-		touchStartPosition = theTouch.position;
+		touchStartPosition = theTouch.position;		//touchStartPosition = ekrana ilk dokunulduğu an
 		
+		//playerStartPos = ekrana dokunduğumuz andaki oyuncu konumu
 		playerStartPos = new Vector3(Mathf.RoundToInt(playerPos.x), 0, Mathf.RoundToInt(playerPos.z));
 	}
 
 	public void RefreshBlocks()
 	{
-		// Make all blocks not connected
+		// Tüm blokları bağlı yapma!
 		foreach (var block in blocks.Values)
 		{
 			block.connected = false;
 		}
 
-		// Find the connected blocks
+		// Bağlı blokları bul!
 		foreach (var block in blocks.Values)
 		{
 			if (block.origin)
@@ -211,7 +217,7 @@ public class Player : MonoBehaviour
 			}
 		}
 
-		// Find the disconnected blocks
+		// Bağlı olmayan blokları bul!
 		List<Block> notConnectedBlocks = new List<Block>();
 		foreach (var block in blocks.Values)
 		{
@@ -221,7 +227,7 @@ public class Player : MonoBehaviour
 			}
 		}
 
-		// Destroy the disconnected blocks
+		// Bağlı olmayan blokları yok et!
 		foreach (var block in notConnectedBlocks)
 		{
 			block.DestroyBlock(false);
